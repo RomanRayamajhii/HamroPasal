@@ -1,0 +1,365 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+// ENUMS
+
+enum Role {
+  CUSTOMER
+  CASHIER
+  MANAGER
+  ADMIN
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+  DISCONTINUED
+}
+
+enum CategoryStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum OrderType {
+  ONLINE
+  OFFLINE
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  COD
+  ESEWA
+  KHALTI
+  CARD
+}
+
+enum InventoryType {
+  STOCK_IN
+  STOCK_OUT
+  POS_SALE
+  ONLINE_SALE
+  ADJUSTMENT
+}
+
+// USER
+
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  username     String   @unique
+  email        String   @unique
+  password     String
+profileImage String?
+  role         Role     @default(CUSTOMER)
+  isActive     Boolean  @default(true)
+
+  phoneNumber  String?
+  address      String?
+  city         String?
+  ward         String?
+  postalCode   String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  customerOrders Order[] @relation("CustomerOrders")
+  cashierOrders  Order[] @relation("CashierOrders")
+
+  inventoryLogs InventoryLog[]
+
+  @@index([role])
+  @@index([isActive])
+}
+
+
+// CATEGORY
+
+
+model Category {
+  id          String @id @default(cuid())
+
+  name        String @unique
+  slug        String @unique
+
+  description String?
+
+  status      CategoryStatus @default(ACTIVE)
+
+  products    Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+
+// OFFER
+
+
+model Offer {
+  id         String   @id @default(cuid())
+
+  title      String
+
+  discount   Decimal  @db.Decimal(10,2)
+
+  startDate  DateTime
+  endDate    DateTime
+
+  isActive   Boolean @default(true)
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+
+// PRODUCT
+
+
+model Product {
+
+  id          String @id @default(cuid())
+
+  name        String @unique
+  slug        String @unique
+
+  description String?
+
+  barcode     String? @unique
+
+  sku         String? @unique
+
+  price       Decimal @db.Decimal(10,2)
+
+  stock       Int @default(0)
+
+  lowStockAlert Int @default(10)
+
+  unit        String @default("kg")
+
+  status      ProductStatus @default(ACTIVE)
+
+  categoryId String
+
+  category Category @relation(fields:[categoryId],references:[id])
+
+  offerId String?
+
+  offer Offer? @relation(fields:[offerId],references:[id])
+
+  images ProductImage[]
+
+  orderItems OrderItem[]
+
+  inventoryLogs InventoryLog[]
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([offerId])
+  @@index([status])
+  @@index([stock])
+  @@index([name])
+
+}
+
+
+// PRODUCT IMAGES
+
+
+model ProductImage {
+
+  id String @id @default(cuid())
+
+  imageUrl String
+
+  productId String
+
+  product Product @relation(fields:[productId],references:[id],onDelete:Cascade)
+
+  @@index([productId])
+
+}
+
+
+// DELIVERY ZONE
+
+
+model DeliveryZone {
+
+  id String @id @default(cuid())
+
+  location String @unique
+
+  charge Decimal @db.Decimal(10,2)
+
+  freeAbove Decimal? @db.Decimal(10,2)
+
+  isActive Boolean @default(true)
+
+  orders Order[]
+
+}
+
+
+// ORDER
+
+
+model Order {
+
+  id String @id @default(cuid())
+
+  orderNumber String @unique
+
+  invoiceNumber String? @unique
+
+  type OrderType @default(ONLINE)
+
+  status OrderStatus @default(PENDING)
+
+  paymentStatus PaymentStatus @default(PENDING)
+
+  paymentMethod PaymentMethod @default(COD)
+
+  subtotal Decimal @db.Decimal(10,2)
+
+  discount Decimal @default(0.00) @db.Decimal(10,2)
+
+  deliveryFee Decimal @default(0.00) @db.Decimal(10,2)
+
+  total Decimal @db.Decimal(10,2)
+
+  customerId String?
+
+  customer User? @relation("CustomerOrders",fields:[customerId],references:[id])
+
+  cashierId String?
+
+  cashier User? @relation("CashierOrders",fields:[cashierId],references:[id])
+
+  deliveryZoneId String?
+
+  deliveryZone DeliveryZone? @relation(fields:[deliveryZoneId],references:[id])
+
+  shippingName String?
+
+  shippingPhone String?
+
+  shippingAddress String?
+
+  customerNote String?
+
+  adminNote String?
+
+  paidAt DateTime?
+
+  completedAt DateTime?
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([cashierId])
+  @@index([status])
+  @@index([createdAt])
+
+}
+
+
+// ORDER ITEMS
+
+
+model OrderItem {
+
+  id String @id @default(cuid())
+
+  orderId String
+
+  productId String
+
+  quantity Int
+
+  price Decimal @db.Decimal(10,2)
+
+  productName String
+
+  unit String
+
+  imageUrl String?
+
+  order Order @relation(fields:[orderId],references:[id],onDelete:Cascade)
+
+  product Product @relation(fields:[productId],references:[id])
+
+  @@index([orderId])
+  @@index([productId])
+
+}
+
+
+// INVENTORY LOG
+
+
+model InventoryLog {
+
+  id String @id @default(cuid())
+
+  productId String
+
+  userId String
+
+  type InventoryType
+
+  quantityBefore Int
+
+  quantityChanged Int
+
+  quantityAfter Int
+
+  note String?
+
+  product Product @relation(fields:[productId],references:[id])
+
+  user User @relation(fields:[userId],references:[id])
+
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+
+}
