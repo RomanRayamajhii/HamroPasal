@@ -1,11 +1,15 @@
+import StoreFront from '@/components/customer/StoreFront'
+// import {SearchProduct} from '@/components/customer/SearchProduct'
 import React from 'react'
-import { NavBar } from '@/components/customer/NavBar'
-
 
 const page = () => {
   return (
-    <NavBar/>
-    
+    <div>
+         <StoreFront/>
+          {/* <SearchProduct/> */}
+         
+    </div>
+   
   )
 }
 
