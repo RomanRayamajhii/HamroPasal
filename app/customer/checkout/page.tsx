@@ -169,7 +169,7 @@ const Page = () => {
                 </div>
                 <div className="flex justify-between items-center pt-1">
                   <span className="text-xs text-gray-500">Quantity</span>
-                  <NumberField defaultValue={1} min={1} max={100} size="sm" className="w-28">
+                  <NumberField defaultValue={1} min={0} max={10} size="sm" className="w-28">
                     <NumberFieldGroup>
                       <NumberFieldDecrement />
                       <NumberFieldInput className="text-xs text-center" />
